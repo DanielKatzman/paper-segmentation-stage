@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paper-segmentation-stage"
+version = "1.0.0"
+description = "SegFormer-based torn-paper segmentation stage for scanner captures and phone photographs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26,<3",
+  "Pillow>=10.0",
+  "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+runtime = ["onnxruntime>=1.20", "PyMuPDF>=1.24"]
+training = [
+  "transformers>=4.40",
+  "onnx>=1.16",
+  "onnxruntime>=1.20",
+  "PyMuPDF>=1.24",
+  "PyYAML>=6.0",
+  "shapely>=2.0",
+]
+build = [
+  "onnxruntime>=1.20",
+  "PyMuPDF>=1.24",
+  "pyinstaller>=6.10",
+]
+dev = ["jsonschema>=4.21", "pytest>=8.0"]
+
+[project.scripts]
+paper-segment = "universal_segmenter.pipeline.cli:main"
+paper-annotate = "universal_segmenter.annotation.app:launch_annotation_tool"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

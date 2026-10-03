@@ -1,0 +1,3 @@
+# Keep the already-working CUDA/PyTorch installation for the GTX 1070.
+# This file intentionally does not install or replace PyTorch.
+-e .[training]

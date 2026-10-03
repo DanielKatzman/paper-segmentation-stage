@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/paper-segmentation-manifest-1.0.schema.json",
+  "title": "Paper segmentation manifest row",
+  "type": "object",
+  "required": [
+    "schema_version", "capture_id", "source_path", "source_sha256",
+    "original_size_hw", "bbox_xywh", "mask_path", "piece_path",
+    "piece_mask_path", "overlay_path", "model_version", "accepted",
+    "review_status", "reason_codes"
+  ],
+  "properties": {
+    "schema_version": {"const": "paper-segmentation-manifest-1.0"},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "original_size_hw": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {"type": "integer", "minimum": 1}
+    },
+    "bbox_xywh": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": {"type": "integer", "minimum": 0}
+    },
+    "accepted": {"type": "boolean"},
+    "review_status": {
+      "enum": ["auto_accepted", "needs_review", "manually_reviewed"]
+    },
+    "reason_codes": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
