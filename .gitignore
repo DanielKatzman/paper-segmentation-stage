@@ -5,7 +5,7 @@ __pycache__/
 build/
 dist/
 release/
-data/
+/data/
 experiments/
 exports/
 models/*.onnx
