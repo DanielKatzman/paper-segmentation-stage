@@ -72,5 +72,13 @@ def restore_probability(probability: np.ndarray,
         transform.top:transform.top + transform.resized_height,
         transform.left:transform.left + transform.resized_width]
     height, width = transform.original_hw
-    return np.asarray(Image.fromarray(crop.astype(np.float32), mode="F").resize(
-        (width, height), Image.Resampling.BILINEAR), dtype=np.float32)
+    restored = np.asarray(
+        Image.fromarray(crop.astype(np.float32), mode="F").resize(
+            (width, height), Image.Resampling.BILINEAR),
+        dtype=np.float32,
+    )
+    if not np.isfinite(restored).all():
+        raise ValueError("restored probability map contains NaN or infinity")
+    # Bilinear float32 restoration can also move a saturated endpoint by a
+    # few ULPs.  Keep the final map inside its documented probability domain.
+    return np.clip(restored, 0.0, 1.0).astype(np.float32, copy=False)

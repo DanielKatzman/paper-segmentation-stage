@@ -17,6 +17,10 @@ from .preprocess import LetterboxTransform, letterbox, restore_probability
 
 IMAGENET_MEAN = np.asarray((0.485, 0.456, 0.406), dtype=np.float32)
 IMAGENET_STD = np.asarray((0.229, 0.224, 0.225), dtype=np.float32)
+# ONNX Runtime may evaluate the exported sigmoid a few float32 ULPs outside
+# its mathematical [0, 1] range.  Accept only that numerical noise; a larger
+# excursion still indicates a corrupt or incompatible model output.
+PROBABILITY_RANGE_TOLERANCE = 1.0e-5
 IMAGE_SUFFIXES = frozenset({
     ".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp",
 })
@@ -112,7 +116,18 @@ def run_probability(session, input_tensor: np.ndarray) -> np.ndarray:
     if probability.shape[:2] != (1, 1):
         raise ValueError(
             f"expected ONNX output [1, 1, H, W], received {probability.shape}")
-    return probability
+    if not np.isfinite(probability).all():
+        raise ValueError("ONNX probability output contains NaN or infinity")
+    minimum = float(probability.min())
+    maximum = float(probability.max())
+    tolerance = PROBABILITY_RANGE_TOLERANCE
+    if minimum < -tolerance or maximum > 1.0 + tolerance:
+        raise ValueError(
+            "ONNX probability output is outside the permitted numerical "
+            f"range: min={minimum:.9g}, max={maximum:.9g}")
+    # Preserve the strict public SegmentationResult contract.  Clipping here
+    # changes only impossible sigmoid values caused by finite-precision math.
+    return np.clip(probability, 0.0, 1.0).astype(np.float32, copy=False)
 
 
 def duration_summary(milliseconds: Sequence[float]) -> dict[str, float | int]:
