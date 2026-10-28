@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paper-segmentation-stage"
-version = "1.0.0"
+version = "2.0.0"
 description = "SegFormer-based torn-paper segmentation stage for scanner captures and phone photographs."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -33,10 +33,14 @@ dev = ["jsonschema>=4.21", "pytest>=8.0"]
 
 [project.scripts]
 paper-segment = "universal_segmenter.pipeline.cli:main"
+paper-stage1 = "universal_segmenter.release_cli:main"
 paper-annotate = "universal_segmenter.annotation.app:launch_annotation_tool"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+universal_segmenter = ["compatibility.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

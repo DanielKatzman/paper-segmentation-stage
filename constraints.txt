@@ -1,0 +1,25 @@
+# CPU Python 3.14 integration environment; validated versions.
+numpy==2.5.4
+Pillow==13.0.0
+scipy==1.18.1
+onnxruntime==1.31.1
+PyMuPDF==2.0
+PyYAML==6.0.3
+pytest==9.2.0
+jsonschema==4.26.0
+attrs==26.1.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==2026.9.1
+flatbuffers==25.12.19
+protobuf==7.36.2
+packaging==26.3
+colorama==0.4.6
+iniconfig==2.3.1
+pluggy==1.7.0
+pygments==2.21.0
+networkx==3.7
+psutil==7.2.2
+tabulate==0.10.0
+pymupdf-layout==2.0
+pymupdf4llm==2.0
