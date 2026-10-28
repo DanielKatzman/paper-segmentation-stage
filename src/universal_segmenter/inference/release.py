@@ -39,7 +39,11 @@ def resource_root(project: Path | None = None) -> Path:
     return Path(project or Path(__file__).resolve().parents[3]).resolve()
 
 
-def locate_release(project: Path | None = None) -> tuple[Path, Path]:
+def locate_release(project: Path | None = None,
+                   release_directory: Path | None = None) -> tuple[Path, Path]:
+    if release_directory is not None:
+        folder = Path(release_directory).resolve()
+        return folder / MODEL_FILENAME, folder / "release.json"
     root = resource_root(project)
     folders = [root / "models", root / "exports"]
     for folder in folders:
@@ -69,8 +73,9 @@ class ReleaseConfig:
 
 
 def load_release(project: Path | None = None,
-                 require_holdout_pass: bool = True) -> ReleaseConfig:
-    model_path, release_path = locate_release(project)
+                 require_holdout_pass: bool = True,
+                 release_directory: Path | None = None) -> ReleaseConfig:
+    model_path, release_path = locate_release(project, release_directory)
     if not model_path.is_file() or not release_path.is_file():
         raise FileNotFoundError(
             f"Production release is incomplete. Expected {model_path.name} and "
@@ -128,10 +133,12 @@ class Segmenter:
 
     def __init__(self, project: Path | None = None, cpu_threads: int | None = None,
                  require_holdout_pass: bool = True,
-                 release: ReleaseConfig | None = None) -> None:
+                 release: ReleaseConfig | None = None,
+                 release_directory: Path | None = None) -> None:
         import os
         self.release = release or load_release(
-            project, require_holdout_pass=require_holdout_pass)
+            project, require_holdout_pass=require_holdout_pass,
+            release_directory=release_directory)
         threads = max(1, min(8, int(
             cpu_threads if cpu_threads is not None else (os.cpu_count() or 2) - 1)))
         self.cpu_threads = threads

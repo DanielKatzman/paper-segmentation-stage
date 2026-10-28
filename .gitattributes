@@ -1,2 +1,4 @@
+# Runtime inventories bind bytes; preserve LF files on every platform.
+* -text
 models/*.onnx filter=lfs diff=lfs merge=lfs -text
 models/*.pt filter=lfs diff=lfs merge=lfs -text

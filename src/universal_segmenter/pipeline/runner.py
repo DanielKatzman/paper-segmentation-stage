@@ -105,17 +105,19 @@ def _cache_prediction(segmenter: Segmenter, output: Path, source_hash: str,
     mask_path, metadata_path = _cache_paths(
         output, segmenter.release.cache_namespace, source_hash)
     if mask_path.is_file() and metadata_path.is_file():
-        with Image.open(mask_path) as source:
-            mask = np.asarray(source.convert("L"), dtype=np.uint8) >= 128
-        if mask.shape == rgb.shape[:2]:
-            return (
-                mask,
-                json.loads(metadata_path.read_text(encoding="utf-8")),
-                True,
-            )
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            checksum_matches = metadata.get("cache_mask_sha256") == sha256_file(mask_path)
+            with Image.open(mask_path) as source:
+                mask = np.asarray(source.convert("L"), dtype=np.uint8) >= 128
+            if checksum_matches and mask.shape == rgb.shape[:2]:
+                return mask, metadata, True
+        except (OSError, ValueError):
+            pass  # An interrupted or corrupted cache is recomputed from its source.
     result = segmenter.segment(rgb)
     _save_png(mask_path, result.mask.astype(np.uint8) * 255)
     metadata = result.metadata()
+    metadata["cache_mask_sha256"] = sha256_file(mask_path)
     _atomic_json(metadata_path, metadata)
     return result.mask, metadata, False
 
@@ -133,7 +135,8 @@ def _existing_is_current(row: dict[str, Any], output: Path, source_hash: str,
 def run_pipeline(input_folder: Path, output_folder: Path,
                  review: ReviewMode = "flagged", cpu_threads: int | None = None,
                  pdf_dpi: int = 300, reprocess: bool = False,
-                 project: Path | None = None) -> dict[str, Any]:
+                 project: Path | None = None, headless: bool = False,
+                 release_directory: Path | None = None) -> dict[str, Any]:
     """Segment a folder recursively and emit the immutable Stage-1 contract."""
     if review not in {"none", "flagged", "all"}:
         raise ValueError("review must be none, flagged, or all")
@@ -141,13 +144,15 @@ def run_pipeline(input_folder: Path, output_folder: Path,
     output = Path(output_folder).resolve()
     if not input_folder.is_dir():
         raise FileNotFoundError(input_folder)
-    if input_folder == output or input_folder in output.parents:
-        raise ValueError("output_folder cannot be inside input_folder")
+    if (input_folder == output or input_folder in output.parents
+            or output in input_folder.parents):
+        raise ValueError("output_folder cannot overlap input_folder")
     output.mkdir(parents=True, exist_ok=True)
     capture_manifest = output / ".state" / "captures.jsonl"
     scan = sync_capture_manifest(input_folder, capture_manifest, output)
     captures = read_jsonl(capture_manifest)
-    segmenter = Segmenter(project=project, cpu_threads=cpu_threads)
+    segmenter = Segmenter(project=project, cpu_threads=cpu_threads,
+                          release_directory=release_directory)
     model_version = (
         f"{segmenter.release.model_version}:{segmenter.release.model_sha256[:16]}")
     manifest_path = output / "segmentation_manifest.jsonl"
@@ -181,7 +186,7 @@ def run_pipeline(input_folder: Path, output_folder: Path,
         mask = auto_mask.copy()
         decision_source = "automatic"
         changed_fraction = 0.0
-        if should_review:
+        if should_review and not headless:
             editor = MaskEditor(
                 rgb, mask, auto_mask,
                 f"Paper segmentation {index}/{len(captures)} - {source_hash[:12]}",
@@ -206,6 +211,8 @@ def run_pipeline(input_folder: Path, output_folder: Path,
         diagnostics = diagnose_mask(mask)
         final_reasons = [] if decision_source == "manual_review" else [
             str(reason) for reason in structural_reasons(diagnostics)]
+        if headless and should_review:
+            final_reasons = sorted(set(final_reasons + reasons + ["MANUAL_REVIEW_REQUIRED"]))
         accepted = not final_reasons
         if not accepted:
             flagged += 1
@@ -269,7 +276,7 @@ def run_pipeline(input_folder: Path, output_folder: Path,
         "materialized_this_run": generated,
         "reused_complete_outputs": reused,
         "manually_reviewed_this_run": manual,
-        "needs_review": flagged,
+        "needs_review": sum(not row["accepted"] for row in rows),
         "manifest": str(manifest_path),
     }
     _atomic_json(output / "segmentation_run.json", report)

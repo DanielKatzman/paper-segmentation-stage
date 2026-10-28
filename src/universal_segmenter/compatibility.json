@@ -1,0 +1,39 @@
+{
+  "acquisition_profile": "Explicit user declaration stage1.capture-profile.v1; not inferred by segmentation",
+  "compatible_pipeline_release": "2.0.5",
+  "component_software_version": "1.0.0",
+  "interface": {
+    "command": "paper-stage1",
+    "commands": [
+      "run",
+      "inspect",
+      "verify"
+    ],
+    "exit_codes": {
+      "failed": 2,
+      "interrupted": 130,
+      "ready": 0,
+      "review_required": 3
+    },
+    "manifest_schema": "paper-segmentation-manifest-1.0",
+    "progress_stream": "stderr",
+    "result_stream": "stdout JSON"
+  },
+  "model": {
+    "path": "models/segformer_b1_detail_768_v3.onnx",
+    "release_manifest_sha256": "d10a6c3ead11b7a3b6d82acf00539cf91a26b9c7461b53fbd18456ff2c0309f5",
+    "sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417"
+  },
+  "module": "universal_segmenter",
+  "qualification_scope": "Packaging and interoperability of frozen models; no new accuracy claim",
+  "release_version": "2.0.0",
+  "runtime": {
+    "constraints": "constraints.txt",
+    "default_device": "cpu",
+    "gpu_required": false,
+    "provider": "CPUExecutionProvider",
+    "python_major_minor": "3.14"
+  },
+  "schema_version": "stage1.release-compatibility.v1",
+  "source_inventory": "provenance/runtime_sources.json"
+}

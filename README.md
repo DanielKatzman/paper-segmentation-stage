@@ -1,4 +1,45 @@
-# Paper Segmentation Stage
+# Paper Segmentation Stage — v2 distribution
+
+Version **2.0.0** packages the frozen Stage 1 core (software 1.0.0) for the
+four-stage v2 pipeline. The SegFormer v3 weights, threshold, preprocessing and
+postprocessing are preserved. This is an integration release, with an explicit
+headless command, model paths, checksummed resume and compatibility metadata.
+
+## CPU installation and orchestration
+
+Use Python 3.14 and obtain the Git LFS model payload before verification:
+
+```text
+git lfs pull
+python -B tools/setup.py --with-tests
+.venv/Scripts/python.exe -B tools/verify_release.py
+.venv/Scripts/paper-stage1.exe verify --models models
+```
+
+On Linux use `.venv/bin/python` and `.venv/bin/paper-stage1`. Setup creates a
+fresh environment and refuses to overwrite one. Runtime installation needs no
+training dataset, checkpoint, Torch or CUDA. `constraints.txt` records the CPU
+dependency versions used for qualification; see [validation](docs/VALIDATION.md)
+for the platforms actually tested.
+
+```text
+paper-stage1 run --input <captures> --output <new-stage1-output> --models <models-directory> --capture-profile <declared-profile.json>
+paper-stage1 inspect --input <stage1-output>
+```
+
+The installed command works from any working directory with an explicit model
+directory. Its default `--review flagged` is headless: flagged pieces remain
+unaccepted, and exit code 3 means review is required. `--review all` leaves every
+piece pending; `--review none` retains automatic structural acceptance. Progress
+goes to stderr and stdout contains one JSON result. Repeat the identical command
+with `--resume`; changed inputs/configuration or modified published artifacts are
+rejected. A stale `.paper-stage1.lock` requires confirming its process has stopped
+before operator recovery.
+
+The existing `paper-segment` command remains the interactive desktop interface.
+Use a new job after review; the v2 command does not silently edit an already
+published output. [Orchestrator contract](docs/ORCHESTRATOR.md) ·
+[Compatibility metadata](compatibility.json)
 
 This is the frozen first stage of the torn-paper reconstruction pipeline. It
 finds one target paper piece in either a scanner capture or a phone photograph,
@@ -6,8 +47,8 @@ without asking the user to select a capture mode. The production network is
 only **SegFormer-B1 Detail v3 at 768 px**. ResNet and the old deterministic
 guesser are deliberately not part of this repository.
 
-The source repository does not contain the large ONNX binary. The finalization
-workflow below creates the two files that define the production release:
+The ONNX binary is tracked with Git LFS. The following two files define the
+production model release and are verified before inference:
 
 ```text
 models/
@@ -34,7 +75,11 @@ The next reconstruction stage must read `segmentation_manifest.jsonl` and the
 artifact paths it names. It must not import training, generator, or annotator
 internals. That keeps Stage 1 replaceable.
 
-## Exact finalization steps on your Windows PC
+## Rebuilding the frozen model — maintainer workflow
+
+These historical export/calibration steps explain model provenance. They are
+not required to install or run the released CPU model. Do not repeat holdout
+evaluation for an integration-only packaging change.
 
 Start in this new repository, not the old research folder.
 
