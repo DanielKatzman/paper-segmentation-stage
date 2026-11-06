@@ -1,0 +1,29 @@
+{
+  "input_manifest_sha256": "1e1ea571a5f228d1f4201af7198de1e2fb6b503878778f6dcfd483e811d0468b",
+  "loaded_pieces": 28,
+  "orchestrator_migration_required": true,
+  "pieces_per_source_sorted": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "production_reader_sha256": "672be223e468cb48b723df76e7b9a84018fb2ea17260a21e08165740935ef832",
+  "reader_matches_both_github_refs_byte_for_byte": true,
+  "schema_version": "stage1.stage2-input-compatibility.v1",
+  "scope": "Existing Stage 2 input reader/crop-mask validation and piece/cache identities; no Stage 2 neural inference or new four-stage image qualification.",
+  "skipped_unaccepted": 0,
+  "sources": 7,
+  "stage1_release": "v2.5.0",
+  "stage1_release_commit": "be0393b0fe72c00bebda8c17f35ccda170b600e3",
+  "stage2_input_code_change_required": false,
+  "stage2_main_commit": "84c36bef1669ab421e6907051cf93cb10d087c53",
+  "stage2_orchestrator_pin": "8b095867f1eea7216920196fd36c08a4f57b2820",
+  "unique_piece_ids": 28,
+  "unique_record_fingerprints": 28,
+  "upstream_adapter_policy": "bounded-predicted-mask-native-frame.v2",
+  "upstream_adapter_removed_pixels": 0
+}

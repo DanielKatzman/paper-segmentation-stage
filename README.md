@@ -1,78 +1,116 @@
 # Paper Segmentation Stage — v2.5.0
 
-Version 2.5.0 supports separated pieces in the annotation tool and headless
-pipeline: one photo can produce multiple individually identified native masks,
-transparent crops and review entries. It also includes zero/one/many-piece
-dataset collection, synthetic scene generation and immutable dataset assembly.
-The SegFormer-B1 Detail v3 weights remain unchanged. Training photos can contain
-arbitrary fragments; complete original pages and known page IDs are not required.
+Stage 1 of the paper-reconstruction pipeline segments paper fragments from photos
+and scans. One image can produce multiple independently identified pieces, each
+with its own native-resolution mask, transparent crop and review state.
 
-- [Owner quickstart and commands](docs/MULTI_PIECE_QUICKSTART.md)
-- [Teammate annotation guide](docs/TEAMMATE_COLLECTION_GUIDE.md)
-- [Orchestrator v2.5 migration handoff](docs/ORCHESTRATOR_HANDOFF_V2_5.md)
-- [Version 2.5 release notes](docs/RELEASE_V2_5.md)
-- Launch the new app: `python scripts/run_annotator.py` or `paper-annotate`.
-- Data commands: `python scripts/paper_scenes.py --help` or `paper-scenes`.
-- Legacy UI: `python scripts/run_annotator.py --legacy`.
-- Keep existing datasets intact; new versions go under `data/multi_piece/`.
+The model is **SegFormer-B1 Detail v3**, unchanged in v2.5.0. Inference runs on
+CPU using a 768 × 768 letterboxed view; masks and crops are restored to the
+original image coordinates. Training data, PyTorch and a GPU are not required
+to run the released tool or headless inference.
 
-The existing orchestrator must migrate its photo-count and review assumptions
-before selecting v2.5.0. The handoff lists the exact changes. Its native boundary
-adapter and downstream per-piece mask/crop format are retained. The legacy
-headless behavior is available with `--piece-mode single`.
+[Download v2.5.0](https://github.com/DanielKatzman/paper-segmentation-stage/releases/tag/v2.5.0)
+· [Teammate guide](docs/TEAMMATE_COLLECTION_GUIDE.md)
+· [Dataset owner quickstart](docs/MULTI_PIECE_QUICKSTART.md)
+· [Orchestrator handoff](docs/ORCHESTRATOR_HANDOFF_V2_5.md)
 
-The historical v2 distribution notes below describe the integration baseline;
-the v2.5 handoff takes precedence for multi-piece cardinality and identities.
+## What v2.5.0 supports
 
-Version **2.0.0** packages the frozen Stage 1 core (software 1.0.0) for the
-four-stage v2 pipeline. The SegFormer v3 weights, threshold, preprocessing and
-postprocessing are preserved. This is an integration release, with an explicit
-headless command, model paths, checksummed resume and compatibility metadata.
+- **Separated, fully visible fragments:** one or many pieces per photo, with
+  independent correction, acceptance and rejection. Touching/overlapping pieces
+  and recovering occluded paper are outside the current capture workflow.
+- **Training captures with zero, one or many pieces:** arbitrary fragments from
+  unrelated or unknown pages are valid. Page IDs are optional; collecting an
+  entire original page is not required.
+- **A portable annotation tool:** automatic suggestions for untouched captures,
+  progress and timing, cancellation, manual edits, split/merge operations and
+  revision history.
+- **Dataset preparation:** checked collection ZIPs, native integer instance
+  labels, union masks, raster outlines, central split assignment and immutable
+  dataset versions. Existing datasets are kept separately.
+- **Synthetic scenes:** procedural paper fragments, reviewed real cutouts,
+  retextured shapes, backgrounds, capture effects and empty scenes. Generation
+  is configured, seeded and resumable.
 
-## CPU installation and orchestration
+The training/data foundation is included, but this release does not contain a
+newly trained multi-piece model. Review real predictions before accepting them.
 
-Use Python 3.14 and obtain the Git LFS model payload before verification:
+## Download the tool
+
+| Asset | Contents |
+| --- | --- |
+| [Windows tool](https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v2.5.0/PaperSegmentationAnnotator-Windows-x86_64.zip) | Standalone annotator with the CPU model and runtime. Extract the whole ZIP before running the executable. |
+| [macOS Apple-Silicon build kit](https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v2.5.0/PaperSegmentationAnnotator-macOS-arm64-build-kit.zip) | Source and model bundle to build on a native arm64 Mac. This is a build kit, not a prebuilt `.app`. |
+| [Python wheel](https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v2.5.0/paper_segmentation_stage-2.5.0-py3-none-any.whl) and [models](https://github.com/DanielKatzman/paper-segmentation-stage/releases/download/v2.5.0/paper-segmentation-stage-v2.5.0-models.zip) | Python/headless installation. Install the wheel with its `runtime` extra and provide the extracted `models/` directory explicitly. |
+
+The [release page](https://github.com/DanielKatzman/paper-segmentation-stage/releases/tag/v2.5.0)
+also contains the source archive, handoff, validation report, asset manifest and
+`SHA256SUMS.txt`. The Windows tool bundles its model; the Python wheel does not.
+
+## Collect real training images
+
+1. Open the annotator and choose **Open / create workspace**. Keep the workspace
+   outside the input photo folder and application folder; reopen it to resume.
+2. Choose the capture type and add a photo/scan folder. Contributor, collection,
+   known page ID and session are optional metadata. Preserve known repeat-piece
+   or session identities so the dataset owner can group related observations.
+3. Select a capture. Automatic suggestions run for untouched images. Review each
+   proposal separately, correct its mask, reject false detections and add missed
+   pieces. The model's proposals are not manual approvals.
+4. When every visible piece in that image is labeled and accepted, choose
+   **Confirm every VISIBLE piece labeled**. This concerns the current image,
+   regardless of whether its fragments form a complete page.
+5. For a true negative, reject false proposals and choose **Confirm NO pieces**.
+   Rejection alone does not confirm an empty image. Mark a negative as a
+   **Clean compositing background** only when it is suitable for synthetic use.
+6. Choose **Export reviewed collection** and send that ZIP to the dataset owner.
+   The default export includes reviewed/confirmed-empty images and omits
+   unfinished or excluded captures.
+
+Collections contain native images, instance labels, union masks, outlines,
+metadata, checksums and a preview sheet. The owner-side `collection-assets`
+command extracts training-eligible real pieces/backgrounds for the generator.
+
+**Publish approved pieces** is a separate export of accepted reconstruction
+observations and their crops/masks. It does not certify a complete physical
+puzzle inventory. The [teammate guide](docs/TEAMMATE_COLLECTION_GUIDE.md) explains
+editing controls, empty images, saved revisions and the two exports.
+
+## Run from source
+
+Python 3.12 is used for the portable GUI build. The headless CPU runtime and wheel
+have also been checked on Python 3.14. Use a separate environment for training.
 
 ```text
+git clone https://github.com/DanielKatzman/paper-segmentation-stage.git
+cd paper-segmentation-stage
+git lfs install
 git lfs pull
-python -B tools/setup.py --with-tests
-.venv/Scripts/python.exe -B tools/verify_release.py
-.venv/Scripts/paper-stage1.exe verify --models models
+python -m venv .venv
 ```
 
-On Linux use `.venv/bin/python` and `.venv/bin/paper-stage1`. Setup creates a
-fresh environment and refuses to overwrite one. Runtime installation needs no
-training dataset, checkpoint, Torch or CUDA. `constraints.txt` records the CPU
-dependency versions used for qualification; see [validation](docs/VALIDATION.md)
-for the platforms actually tested.
+Activate the new environment (`.venv\Scripts\Activate.ps1` in PowerShell, or
+`source .venv/bin/activate` on Linux/macOS), then run:
 
 ```text
-paper-stage1 run --input <captures> --output <new-stage1-output> --models <models-directory> --capture-profile <declared-profile.json>
-paper-stage1 inspect --input <stage1-output>
+python -m pip install -e ".[runtime,data]"
+python tools/verify_release.py
+python scripts/run_annotator.py
 ```
 
-The installed command works from any working directory with an explicit model
-directory. Its default `--review flagged` is headless: flagged pieces remain
-unaccepted, and exit code 3 means review is required. `--review all` leaves every
-piece pending; `--review none` retains automatic structural acceptance. Progress
-goes to stderr and stdout contains one JSON result. Repeat the identical command
-with `--resume`; changed inputs/configuration or modified published artifacts are
-rejected. A stale `.paper-stage1.lock` requires confirming its process has stopped
-before operator recovery.
+Source GUI use requires a working Tk installation. Its launcher finds the model
+under this checkout's `models/` directory. The packaged Windows app needs neither
+Python nor Tk installed separately. For a wheel-only/headless installation, use
+`paper-stage1` with `--models /absolute/path/to/models`.
 
-The existing `paper-segment` command remains the interactive desktop interface.
-Use a new job after review; the v2 command does not silently edit an already
-published output. [Orchestrator contract](docs/ORCHESTRATOR.md) ·
-[Compatibility metadata](compatibility.json)
+`constraints.txt` records the pinned Python 3.14 CPU integration dependencies.
+`tools/setup.py` creates that runtime environment, requires Python 3.14 and
+refuses to overwrite an existing environment. It is not the full training/test
+setup. Training dependencies and hardware planning are covered in the
+[training status](docs/P40_TRAINING_PLAN_AND_STATUS.md) and
+[university setup](docs/UNIVERSITY_GPU_SETUP.md).
 
-This is the frozen first stage of the torn-paper reconstruction pipeline. It
-finds one target paper piece in either a scanner capture or a phone photograph,
-without asking the user to select a capture mode. The production network is
-only **SegFormer-B1 Detail v3 at 768 px**. ResNet and the old deterministic
-guesser are deliberately not part of this repository.
-
-The ONNX binary is tracked with Git LFS. The following two files define the
-production model release and are verified before inference:
+The two verified model files are:
 
 ```text
 models/
@@ -80,188 +118,152 @@ models/
   release.json
 ```
 
-`release.json` pins the ONNX SHA-256, frozen-dataset fingerprint, checkpoint,
-parity check, calibration decision, and untouched-holdout report. The GUI and
-batch pipeline refuse to use an unverified release.
+`release.json` binds the model hash, calibration and historical v3 qualification.
+The new multi-piece path preserves the calibrated threshold and extracts all
+qualifying connected components from the probability map. The old
+single-target component-selection policy remains available in legacy mode.
 
-## Architecture
-
-| Module | Owns | Depends on |
-|---|---|---|
-| `inference` | letterbox, ONNX CPU inference, calibrated threshold, target-component policy | `models/` release files |
-| `annotation` | recursive folder scan, background cache, split assignment, manual correction | `inference` |
-| `pipeline` | production batch output and stable JSONL contract | `inference`, correction editor |
-| `generation` | real/synthetic dataset compilation | three generator input folders |
-| `training` | SegFormer training, best/last checkpoints, exact resume | frozen dataset |
-| `evaluation` | calibration-only selection and one-time holdout gate | exported ONNX, frozen dataset |
-
-The next reconstruction stage must read `segmentation_manifest.jsonl` and the
-artifact paths it names. It must not import training, generator, or annotator
-internals. That keeps Stage 1 replaceable.
-
-## Rebuilding the frozen model — maintainer workflow
-
-These historical export/calibration steps explain model provenance. They are
-not required to install or run the released CPU model. Do not repeat holdout
-evaluation for an integration-only packaging change.
-
-Start in this new repository, not the old research folder.
-
-1. Copy the completed assets from the old project into the same relative paths:
+## Headless segmentation
 
 ```text
-old project/data/complete_dataset_v3
-    -> this project/data/complete_dataset_v3
-
-old project/experiments/segformer_b1_detail_768_real_v3/checkpoints/best.pt
-    -> this project/experiments/segformer_b1_detail_768_real_v3/checkpoints/best.pt
+paper-stage1 verify --models models
+paper-stage1 run --input captures --output new_stage1_output --models models --piece-mode multi --review all
+paper-stage1 inspect --input new_stage1_output
 ```
 
-Only `best.pt` is required to make the production model. Keep `last.pt` and the
-training report in your private training archive if you want full provenance;
-they are not runtime assets.
+`python -m universal_segmenter.release_cli` is equivalent to `paper-stage1`.
+This interface is headless: it never opens a correction window. The default
+piece mode is `multi`; `--piece-mode single` selects the historical one-target
+pipeline. The orchestrator also supplies its bound acquisition declaration with
+`--capture-profile /job/capture_profile.json`.
 
-2. Reuse the CUDA/PyTorch environment that already trained v3. This avoids
-replacing your known-good GTX 1070 PyTorch build:
+| Review setting | Behavior |
+| --- | --- |
+| `--review all` | Every candidate remains pending individual review. |
+| `--review flagged` (default) | Structurally flagged candidates remain pending; other candidates can be automatically accepted. |
+| `--review none` | No requested manual-review pass; structural failures still remain unaccepted. |
 
-```powershell
-cd C:\Users\danka\Desktop\paper-segmentation-stage
-$PYTHON = "C:\Users\danka\Desktop\universal-paper-segmenter\.venv\Scripts\python.exe"
-& $PYTHON -m pip install -r requirements-training.txt
-```
+Exit codes are `0` ready, `3` review required, `2` failed and `130` interrupted.
+Progress is written to stderr; stdout contains one JSON result. A zero-proposal
+prediction produces an explicit pending empty-source placeholder; it does not
+automatically certify that the image contains no paper.
 
-3. Export the exact approved checkpoint and verify PyTorch/ONNX parity:
+Use a new output folder for a changed request. `--resume` requires identical
+inputs, mode, configuration, model, package source and runtime dependencies;
+modified published artifacts are rejected. Begin new jobs when migrating from
+an older Stage 1 version.
 
-```powershell
-& $PYTHON scripts\export_segformer.py
-```
+For interactive folder review, use `paper-segment` or
+`python scripts/segment_folder.py INPUT OUTPUT --review flagged`. The collection
+app is launched with `python scripts/run_annotator.py`; its old single-piece UI
+is available with `--legacy`.
 
-This script refuses the wrong run, wrong dataset fingerprint, wrong best epoch,
-or wrong validation score. The expected checkpoint is human epoch 8 with score
-`0.9259111612330179`.
-
-4. Select threshold and postprocessing using **calibration only**:
-
-```powershell
-& $PYTHON scripts\calibrate_release.py
-```
-
-5. Run the untouched holdout exactly once:
-
-```powershell
-& $PYTHON scripts\evaluate_release.py
-```
-
-Inspect both:
-
-```text
-exports/holdout_evaluation.json
-exports/holdout_preview.jpg
-```
-
-Continue only if the JSON says `"valid": true` and the preview looks correct.
-If it fails, do not tune on holdout. Add training/calibration data, create a new
-dataset and run name, retrain, and reserve a new holdout.
-
-6. Create the immutable production model pair:
-
-```powershell
-& $PYTHON scripts\finalize_release.py
-```
-
-7. Smoke-test the production batch stage on a separate folder:
-
-```powershell
-& $PYTHON scripts\segment_folder.py `
-  C:\path\to\captures C:\path\to\stage1_output --review flagged
-```
-
-Review modes are:
-
-- `flagged` (default): open the editor only for structural warnings;
-- `all`: manually approve every mask for maximum safety;
-- `none`: unattended processing; warnings remain in the manifest.
-
-The command is resumable. Existing outputs are reused only when source hash,
-model hash, threshold, policy, and expected files still match.
-
-8. Launch the source version of the annotation tool:
-
-```powershell
-& $PYTHON scripts\run_annotator.py
-```
-
-9. Build the final Windows application and the Apple-Silicon build kit:
-
-```powershell
-& $PYTHON -m pip install -r requirements-portable-build.txt
-& $PYTHON scripts\export_standalone_annotator.py --all
-```
-
-Outputs:
-
-```text
-release/PaperSegmentationAnnotator-Windows-x86_64.zip
-release/PaperSegmentationAnnotator-macOS-arm64-build-kit.zip
-```
-
-PyInstaller cannot build a macOS app on Windows. Send the build-kit ZIP to the
-Apple-Silicon teammate. They extract it and double-click
-`BUILD_MAC_APP.command`; it creates the native macOS application ZIP.
-
-## Production output contract
-
-Each batch output folder contains:
+## Output contract and Stage 2
 
 ```text
 stage1_output/
-  masks/                         full-resolution binary masks
-  pieces/                        tight RGBA paper crops
+  masks/                         full native-size per-piece binary masks
+  pieces/                        tight native RGBA crops
   piece_masks/                   crop-coordinate binary masks
-  overlays/                      human-review previews
-  cache/                         model-hash-keyed reusable predictions
-  segmentation_manifest.jsonl    canonical interface to Stage 2
-  segmentation_run.json          run summary
+  overlays/                      review previews
+  cache/                         checksummed prediction caches
+  segmentation_manifest.jsonl    one row per observation
+  segmentation_run.json          source inventory and run summary
+  integration_request.json       headless request identity
+  integration_receipt.json       headless publication checksums/result
 ```
 
-Every manifest row contains source SHA-256, original size, bounding box,
-artifact paths, model/release identity, threshold, postprocessing policy,
-automatic/manual decision source, acceptance state, reason codes, and
-diagnostics. See `schemas/segmentation_manifest.schema.json`.
+Each piece observation has a unique `capture_id` and `artifact_id`. Pieces from the same
+photo share `source_capture_id`, `source_sha256` and `source_path`. Each row names
+its own mask/crop files and records native size, crop offset, model identity,
+acceptance and review state. `source_sha256` is not a unique piece/artifact key.
 
-## Collecting and training a future release
+The schema remains `paper-segmentation-manifest-1.0`, with additive source-linkage
+fields. The number of rows can exceed the number of photos. Empty-source
+placeholders have `empty_proposal: true` and are unaccepted. The run summary
+separates `source_count` from `piece_count`; `complete` means all discovered
+sources were processed, not that all pieces of an original page were supplied.
 
-The generator scans all three inputs itself:
+**Stage 2 needs no input-reader change for this format.** Its reader consumes
+individual accepted manifest rows and their crop/mask paths, uses unique
+`capture_id` values, and supports multiple rows sharing one source photo. The
+reader in Stage 2 `main` (`84c36be`) is byte-identical to the orchestrator-pinned
+version (`8b09586`). Its per-piece output/cache identity also uses the individual
+capture or record fingerprint, rather than deduplicating by source-image hash.
+See the [Stage 2 reader](https://github.com/DanielKatzman/paper-reconstruction-stage2/blob/8b095867f1eea7216920196fd36c08a4f57b2820/src/paper_reconstruction_stage2/production.py)
+and [compatibility check](provenance/STAGE2_V2_5_INPUT_COMPATIBILITY.json).
+
+Keep the orchestrator's existing native boundary adapter before Stage 2: it
+checks connectivity and adds the crop margin used by downstream native geometry.
+The **orchestrator still needs its GUI, review publication and piece-inventory
+migration**. Its previous one-photo/one-piece assumptions are separate from
+Stage 2's input reader. The [v2.5 handoff](docs/ORCHESTRATOR_HANDOFF_V2_5.md) lists
+those changes and the checks required before updating its production pin/image.
+
+For reconstruction, preserve a common physical pixel scale across captures:
+consistent scan DPI, or fixed phone height, zoom, output resolution and a parallel
+paper plane. Stage 1 does not resize individual exported pieces, correct
+perspective, determine page ownership or deduplicate the same physical fragment
+across different photos.
+
+## Build datasets and generate synthetic scenes
 
 ```text
-data/generator_inputs/
-  backgrounds/
-  pdfs/
-  real_pieces/
-    images/
-    masks/
-    manifests/
+python scripts/paper_scenes.py --help
+python scripts/paper_scenes.py import teammate_collection.zip data/multi_piece
 ```
 
-Copy the annotation workspace's images, masks, and manifests together so
-train/validation/calibration/holdout assignments are preserved. Then run:
+Use the [owner quickstart](docs/MULTI_PIECE_QUICKSTART.md) for the full sequence:
+import collections, resolve conflicting annotations, assign central grouped
+splits, register training-eligible assets, generate synthetic scenes and freeze
+a new dataset. `configs/multi_piece_generator_v1.json` controls source/background
+mixtures, piece-count bins, spacing, effects, resolution and seed.
 
-```powershell
-& $PYTHON scripts\generate_dataset.py
-& $PYTHON scripts\freeze_dataset.py
-& $PYTHON scripts\train_segformer.py
+The default generator includes empty scenes and count bins up to 17–32 pieces;
+these are configurable generation ranges, not a guaranteed detection capacity.
+Only centrally assigned training assets are eligible for synthesis. Real masks
+supply cutouts that can be placed on varied backgrounds alongside procedural or
+retextured pieces.
+
+Keep `complete_dataset_v3` unchanged and use new folders under `data/multi_piece/`.
+Adding old samples requires explicit auditing that every visible real piece is
+labeled; old one-target masks can leave other paper pieces unlabeled. Preserve
+historical evaluation groups and keep related repeat captures in one split.
+The builder refuses overwriting a dataset and records a content-hash freeze.
+
+## Validation and maintenance
+
+The v2.5 release was checked with 51 tests, own-application Tk controls, a
+Python 3.14 CPU/wheel installation and the extracted Windows executable. Seven
+real 12-megapixel photos produced 28 separate pieces: the native boundary adapter
+preserved all 28 with zero pixels removed, and the Stage 2 input loader accepted
+all 28 unique IDs. These are integration controls, not a general accuracy score
+or a newly qualified four-stage GUI/Docker deployment.
+
+- [Release validation](provenance/RELEASE_V2_5_VALIDATION.json)
+- [Validation scope](docs/VALIDATION.md)
+- [Model provenance and freeze record](docs/STAGE1_FREEZE.md)
+- [Release notes](docs/RELEASE_V2_5.md)
+
+To build the tool in a separate source/build environment:
+
+```text
+python -m pip install -r requirements-portable-build.txt
+python scripts/export_standalone_annotator.py --all
 ```
 
-Training writes `last.pt` frequently and `best.pt` only after a completed
-validation epoch. Ctrl+C once or `scripts/request_stop.py` stops safely; rerun
-the training script to resume the exact cursor. A future release must use a new
-dataset folder, run name, release identifier, and untouched holdout.
+This produces the Windows ZIP and macOS source build kit on Windows. The native
+macOS application must be built and checked on an Apple-Silicon Mac.
 
-## Repository policy
+| Package area | Responsibility |
+| --- | --- |
+| `inference` | Verified v3 model, letterboxing, CPU probabilities and native restoration. |
+| `scenes` | Multi-piece annotation, collection exchange, synthetic scenes and frozen datasets. |
+| `pipeline` | Native per-piece artifacts and batch publication. |
+| `annotation` | Mask editor and legacy single-piece interface. |
+| `training`, `losses` | Dataset loading, sampling, losses, checkpoints and resume. |
+| `evaluation` | Model calibration, metrics and release evaluation. |
 
-- Commit source, schemas, small reports, and `release.json`.
-- Store the ONNX with Git LFS or a versioned GitHub Release.
-- Do not commit raw captures, generated datasets, checkpoints, caches, build
-  folders, or teammate annotation workspaces.
-- Keep the old research repository as an archive until this release passes its
-  holdout and standalone smoke tests.
+Commit source, schemas, small reports and release metadata. Keep raw captures,
+annotation workspaces, generated datasets, checkpoints, caches and build outputs
+outside Git; the ONNX payload is versioned with Git LFS and the release assets.

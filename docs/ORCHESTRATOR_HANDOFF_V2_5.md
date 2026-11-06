@@ -21,6 +21,17 @@ Its per-piece native boundary adapter remains applicable. The release's
 `orchestrator_migration_required: true` metadata makes the required migration
 explicit. This handoff does not claim a newly qualified four-stage Docker image.
 
+Stage 2's input reader needs no change for the per-piece format. The reader in
+its `main` commit `84c36bef1669ab421e6907051cf93cb10d087c53` is byte-identical to
+the orchestrator-pinned `8b095867f1eea7216920196fd36c08a4f57b2820` reader.
+After the existing native boundary adapter, it loaded all 28 pieces from seven
+real photos, retaining 28 unique observation IDs and record fingerprints.
+Multiple rows may share a source hash; Stage 2's per-piece paths/cache identities
+use the observation ID or record fingerprint. The
+[compatibility check](../provenance/STAGE2_V2_5_INPUT_COMPATIBILITY.json) records
+the reader hash and validation scope. The migration below concerns orchestrator
+source/piece accounting and review publication, while retaining that adapter.
+
 ## Invocation and exit codes
 
 Install the v2.5.0 wheel with its `runtime` extra, or install the tagged source
