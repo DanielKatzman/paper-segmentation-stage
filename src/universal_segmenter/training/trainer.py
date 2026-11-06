@@ -192,10 +192,17 @@ def _validation(torch, model, loss_function, loader, device,
                 edge = boundary_metrics(prediction, target, 2.0)
                 profile = str(batch["capture_profile"][item])
                 profile_boundaries[profile].append(edge["boundary_f1"])
+                instance_summary = {}
+                if "instance_labels" in batch:
+                    from scipy import ndimage
+                    from universal_segmenter.scenes.dataset import instance_metrics
+                    instance_summary = instance_metrics(ndimage.label(prediction)[0],
+                        batch["instance_labels"][item].cpu().numpy())
                 rows.append({
                     "sample_id": str(batch["sample_id"][item]),
                     "capture_profile": profile,
                     **region,
+                    "instances_at_iou_0_5": instance_summary,
                     **{f"{name}_at_2px": value for name, value in edge.items()},
                     "catastrophic": bool(
                         region["iou"] < 0.97 or edge["boundary_f1"] < 0.90),
@@ -400,7 +407,7 @@ def run_training(project_root: Path, config: TrainingConfig) -> dict[str, Any]:
                 model.encoder.eval()
             plan = build_epoch_plan(
                 rows, epoch, config.random_seed, samples_per_epoch,
-                config.category_weights)
+                config.category_weights, config.scene_count_weights)
             start_batch = cursor.next_batch if epoch == cursor.epoch else 0
             if start_batch > batches_per_epoch:
                 raise ValueError("checkpoint batch cursor exceeds epoch length")

@@ -1,4 +1,28 @@
-# Paper Segmentation Stage — v2 distribution
+# Paper Segmentation Stage — v2.5.0
+
+Version 2.5.0 supports separated pieces in the annotation tool and headless
+pipeline: one photo can produce multiple individually identified native masks,
+transparent crops and review entries. It also includes zero/one/many-piece
+dataset collection, synthetic scene generation and immutable dataset assembly.
+The SegFormer-B1 Detail v3 weights remain unchanged. Training photos can contain
+arbitrary fragments; complete original pages and known page IDs are not required.
+
+- [Owner quickstart and commands](docs/MULTI_PIECE_QUICKSTART.md)
+- [Teammate annotation guide](docs/TEAMMATE_COLLECTION_GUIDE.md)
+- [Orchestrator v2.5 migration handoff](docs/ORCHESTRATOR_HANDOFF_V2_5.md)
+- [Version 2.5 release notes](docs/RELEASE_V2_5.md)
+- Launch the new app: `python scripts/run_annotator.py` or `paper-annotate`.
+- Data commands: `python scripts/paper_scenes.py --help` or `paper-scenes`.
+- Legacy UI: `python scripts/run_annotator.py --legacy`.
+- Keep existing datasets intact; new versions go under `data/multi_piece/`.
+
+The existing orchestrator must migrate its photo-count and review assumptions
+before selecting v2.5.0. The handoff lists the exact changes. Its native boundary
+adapter and downstream per-piece mask/crop format are retained. The legacy
+headless behavior is available with `--piece-mode single`.
+
+The historical v2 distribution notes below describe the integration baseline;
+the v2.5 handoff takes precedence for multi-piece cardinality and identities.
 
 Version **2.0.0** packages the frozen Stage 1 core (software 1.0.0) for the
 four-stage v2 pipeline. The SegFormer v3 weights, threshold, preprocessing and

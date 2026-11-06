@@ -283,7 +283,8 @@ def _radial_distort(image: np.ndarray, mask: np.ndarray, coefficient: float
 
 
 def _postprocess(image: np.ndarray, mask: np.ndarray, profile: str,
-                 rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+                 rng: np.random.Generator, *, radial_enabled: bool = True
+                 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
     height, width = mask.shape
     result = image.astype(np.float32) / 255.0
     y = np.linspace(-0.5, 0.5, height, dtype=np.float32)[:, None]
@@ -317,7 +318,7 @@ def _postprocess(image: np.ndarray, mask: np.ndarray, profile: str,
     output = np.uint8(np.clip(result, 0.0, 1.0) * 255.0)
 
     radial_coefficient = 0.0
-    if profile == "phone" and rng.random() < 0.38:
+    if radial_enabled and profile == "phone" and rng.random() < 0.38:
         radial_coefficient = float(rng.uniform(-0.055, 0.045))
         output, mask = _radial_distort(output, mask, radial_coefficient)
 

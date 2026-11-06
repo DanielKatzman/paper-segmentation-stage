@@ -12,6 +12,10 @@ def signed_distance_target(mask: np.ndarray, radius_px: float = 24.0) -> np.ndar
         raise ValueError("mask must be two-dimensional")
     if radius_px <= 0:
         raise ValueError("radius_px must be positive")
+    if not mask.any():
+        return np.full(mask.shape, -1.0, dtype=np.float32)
+    if mask.all():
+        return np.full(mask.shape, 1.0, dtype=np.float32)
     inside = ndimage.distance_transform_edt(mask)
     outside = ndimage.distance_transform_edt(~mask)
     signed = inside - outside

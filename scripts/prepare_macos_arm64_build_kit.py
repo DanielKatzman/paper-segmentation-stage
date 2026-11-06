@@ -141,9 +141,16 @@ def create_build_kit(project: Path = PROJECT, output: Path = OUTPUT) -> Path:
         project / "scripts" / "run_annotator.py",
         project / "scripts" / "build_annotation_tool.py",
         project / "scripts" / "export_standalone_annotator.py",
+        project / "scripts" / "prepare_macos_arm64_build_kit.py",
         project / "pyproject.toml",
         project / "requirements-portable-build.txt",
         project / "docs" / "THIRD_PARTY_LICENSES.md",
+        project / "docs" / "TEAMMATE_COLLECTION_GUIDE.md",
+        project / "docs" / "MULTI_PIECE_QUICKSTART.md",
+        project / "docs" / "ORCHESTRATOR_HANDOFF_V2_5.md",
+        project / "docs" / "RELEASE_V2_5.md",
+        project / "scripts" / "paper_scenes.py",
+        project / "configs",
     )
     model = load_portable_model(project)
     missing_sources = [path for path in source_paths if not path.exists()]

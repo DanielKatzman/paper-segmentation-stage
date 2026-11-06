@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .runner import run_pipeline
+from .multi import run_multi_pipeline
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -20,12 +21,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cpu-threads", type=int, default=None)
     parser.add_argument("--pdf-dpi", type=int, default=300)
     parser.add_argument("--reprocess", action="store_true")
+    parser.add_argument("--piece-mode", choices=("multi","single"), default="multi")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    report = run_pipeline(
+    pipeline = run_multi_pipeline if args.piece_mode=="multi" else run_pipeline
+    report = pipeline(
         args.input_folder,
         args.output_folder,
         review=args.review,

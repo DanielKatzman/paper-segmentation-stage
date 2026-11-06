@@ -11,6 +11,11 @@
   ],
   "properties": {
     "schema_version": {"const": "paper-segmentation-manifest-1.0"},
+    "capture_id": {"type": "string", "description": "Unique individual piece observation ID; multiple rows can share one source image."},
+    "source_capture_id": {"type": "string", "description": "Input photo/page identity, shared by its individual proposals."},
+    "candidate_id": {"type": "string"},
+    "artifact_id": {"type": "string", "description": "Unique artifact filename key. Never key multi-piece artifacts by source_sha256 alone."},
+    "empty_proposal": {"type": "boolean", "description": "Pending source-review placeholder when inference found zero pieces; never an accepted physical piece."},
     "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "original_size_hw": {
       "type": "array", "minItems": 2, "maxItems": 2,

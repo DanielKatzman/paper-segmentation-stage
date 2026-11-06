@@ -1,5 +1,9 @@
 # Stage 1 v2 orchestrator contract
 
+For v2.5.0, read [the multi-piece migration handoff](ORCHESTRATOR_HANDOFF_V2_5.md)
+first. The historical baseline below assumes one target per photo; v2.5 defaults
+to one output row per separated piece and adds explicit source linkage/inventory.
+
 Distribution version 2.0.0 packages core software 1.0.0 and frozen SegFormer v3.
 Model identity is independent of the package/interface version. Resolve the
 compatibility manifest and pin exact source/model/configuration hashes at build

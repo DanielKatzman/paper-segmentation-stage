@@ -30,6 +30,14 @@ RELEASE_ROOT = PROJECT / "release"
 # these imports from annotation.app, but an explicit entry makes the release
 # contract robust if the launcher later switches to lazy imports.
 FEATURE_MODULES = (
+    "universal_segmenter.scenes.app",
+    "universal_segmenter.scenes.core",
+    "universal_segmenter.scenes.workspace",
+    "universal_segmenter.scenes.exchange",
+    "universal_segmenter.scenes.dataset",
+    "universal_segmenter.scenes.selfcheck",
+    "universal_segmenter.pipeline.multi",
+    "universal_segmenter.release_cli",
     "universal_segmenter.annotation.app",
     "universal_segmenter.annotation.editor",
     "universal_segmenter.annotation.session",
@@ -138,6 +146,11 @@ def build_standalone(
             built = app
     if not built.exists():
         raise FileNotFoundError(f"PyInstaller output is missing: {built}")
+    for document, name in (("TEAMMATE_COLLECTION_GUIDE.md", "READ_ME_FIRST.md"),
+                           ("MULTI_PIECE_QUICKSTART.md", "OWNER_DATASET_GUIDE.md"),
+                           ("ORCHESTRATOR_HANDOFF_V2_5.md", "ORCHESTRATOR_HANDOFF_V2_5.md"),
+                           ("RELEASE_V2_5.md", "RELEASE_V2_5.md")):
+        shutil.copy2(project / "docs" / document, built / name)
     internal = built / "_internal" if built.is_dir() else built
     accidentally_bundled = [
         name for name in ("torch", "torchvision", "transformers", "cv2", "pytest")

@@ -119,6 +119,8 @@ def dataset_fingerprint(dataset_root: Path,
 
 def freeze_dataset(dataset_root: Path) -> dict[str, Any]:
     root = Path(dataset_root).resolve()
+    if (root / "scene_dataset_freeze.json").exists():
+        return verify_dataset_freeze(root)
     rows = read_sample_rows(root)
     summary = validate_dataset_rows(root, rows)
     frozen = {
@@ -136,6 +138,9 @@ def freeze_dataset(dataset_root: Path) -> dict[str, Any]:
 
 
 def load_dataset_freeze(dataset_root: Path) -> dict[str, Any]:
+    scene_path = Path(dataset_root).resolve() / "scene_dataset_freeze.json"
+    if scene_path.is_file():
+        return json.loads(scene_path.read_text(encoding="utf-8"))
     path = Path(dataset_root).resolve() / FREEZE_FILENAME
     if not path.is_file():
         raise FileNotFoundError(
@@ -149,6 +154,12 @@ def load_dataset_freeze(dataset_root: Path) -> dict[str, Any]:
 
 def verify_dataset_freeze(dataset_root: Path) -> dict[str, Any]:
     root = Path(dataset_root).resolve()
+    if (root / "scene_dataset_freeze.json").exists():
+        from universal_segmenter.scenes.dataset import verify_dataset
+        report = verify_dataset(root)
+        if not report["evaluation_ready"]:
+            raise ValueError("Scene dataset is structurally frozen, but training qualification requires real captures in all four splits")
+        return load_dataset_freeze(root)
     frozen = load_dataset_freeze(root)
     rows = read_sample_rows(root)
     validate_dataset_rows(root, rows)

@@ -22,12 +22,14 @@ IMAGENET_STD = np.asarray((0.229, 0.224, 0.225), dtype=np.float32)
 
 
 def sample_category(sample_kind: str) -> str:
-    if sample_kind == "real_capture":
+    if sample_kind in {"real_capture", "real_scene", "real_scene_empty"}:
         return "real_capture"
     if sample_kind in {"real_piece_composite", "real_shape_retextured"}:
         return "real_derived"
-    if sample_kind == "procedural_piece":
+    if sample_kind in {"procedural_piece", "synthetic_procedural", "synthetic_mixed"}:
         return "procedural"
+    if sample_kind in {"synthetic_real", "synthetic_retextured"}:
+        return "real_derived"
     if sample_kind == "background_only":
         return "background"
     raise ValueError(f"unsupported sample kind: {sample_kind}")
@@ -83,7 +85,8 @@ def _balanced_profile_draws(indices: list[int], rows: Sequence[dict[str, str]],
 
 def build_epoch_plan(rows: Sequence[dict[str, str]], epoch: int,
                      seed: int, total_samples: int,
-                     category_weights: dict[str, float]) -> list[SampleDraw]:
+                     category_weights: dict[str, float],
+                     scene_count_weights: dict[str, float] | None = None) -> list[SampleDraw]:
     """Create the complete deterministic draw order for one training epoch."""
     if total_samples < 1:
         raise ValueError("total_samples must be positive")
@@ -96,7 +99,19 @@ def build_epoch_plan(rows: Sequence[dict[str, str]], epoch: int,
     chosen: list[int] = []
     for category, count in sorted(counts.items()):
         indices = by_category[category]
-        if category == "real_capture":
+        if scene_count_weights:
+            by_count: dict[str,list[int]] = defaultdict(list)
+            for index in indices:
+                n = int(rows[index].get("instance_count") or (0 if rows[index]["sample_kind"]=="background_only" else 1))
+                bucket = "0" if n==0 else "1" if n==1 else "2-4" if n<=4 else "5-8" if n<=8 else "9-16" if n<=16 else "17+"
+                by_count[bucket].append(index)
+            allocation = _allocate(count,scene_count_weights,set(by_count))
+            for bucket,amount in sorted(allocation.items()):
+                if category == "real_capture":
+                    chosen.extend(_balanced_profile_draws(by_count[bucket],rows,amount,rng))
+                else:
+                    chosen.extend(rng.choice(by_count[bucket],size=amount,replace=True).tolist())
+        elif category == "real_capture":
             chosen.extend(_balanced_profile_draws(indices, rows, count, rng))
         else:
             chosen.extend(rng.choice(indices, size=count, replace=True).tolist())
@@ -141,6 +156,21 @@ class PaperDataset:
             index = int(key)
             augmentation_seed = _seed(index, "validation")
         row = self.rows[index]
+        if row.get("scene_path"):
+            from universal_segmenter.scenes.dataset import load_view
+            image_array, label_array, _ = load_view(self.root, row, self.resolution)
+            if self.training:
+                image_array, label_array = self._augment(image_array, label_array, augmentation_seed)
+            mask_array = label_array > 0
+            image_float = (image_array.astype(np.float32) / 255.0 - IMAGENET_MEAN) / IMAGENET_STD
+            return {
+                "image": torch.from_numpy(np.ascontiguousarray(image_float.transpose(2, 0, 1))),
+                "mask": torch.from_numpy(np.ascontiguousarray(mask_array[None]).astype(np.float32)),
+                "distance": torch.from_numpy(np.ascontiguousarray(signed_distance_target(mask_array)[None])),
+                "sample_id": row["sample_id"], "capture_profile": row["capture_profile"],
+                "sample_kind": row["sample_kind"],
+                "instance_labels": torch.from_numpy(np.ascontiguousarray(label_array).astype(np.int64)),
+            }
         with Image.open(self.root / row["image_path"]) as handle:
             image = handle.convert("RGB")
         with Image.open(self.root / row["mask_path"]) as handle:
@@ -158,6 +188,8 @@ class PaperDataset:
         image_float = image_array.astype(np.float32) / 255.0
         image_float = (image_float - IMAGENET_MEAN) / IMAGENET_STD
         distance = signed_distance_target(mask_array, radius_px=24.0)
+        from scipy import ndimage
+        legacy_labels = ndimage.label(mask_array)[0].astype(np.int64)
         return {
             "image": torch.from_numpy(
                 np.ascontiguousarray(image_float.transpose(2, 0, 1))),
@@ -168,6 +200,7 @@ class PaperDataset:
             "sample_id": row["sample_id"],
             "capture_profile": row["capture_profile"],
             "sample_kind": row["sample_kind"],
+            "instance_labels": torch.from_numpy(np.ascontiguousarray(legacy_labels)),
         }
 
     @staticmethod

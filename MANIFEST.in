@@ -1,0 +1,9 @@
+include compatibility.json constraints.txt requirements-portable-build.txt
+recursive-include docs *.md
+recursive-include schemas *.json
+recursive-include configs *.json
+recursive-include scripts *.py
+recursive-include tools *.py
+recursive-include models *.json
+recursive-include provenance *.json
+global-exclude *.py[cod]

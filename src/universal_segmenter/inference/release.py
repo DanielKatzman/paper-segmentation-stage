@@ -201,3 +201,14 @@ class Segmenter:
         )
         result.validate()
         return result
+
+    def segment_scene(self, rgb: np.ndarray, *, minimum_pixels: int = 4):
+        """Propose multiple instances without changing the frozen one-target API."""
+        from universal_segmenter.scenes.core import new_scene
+        from universal_segmenter.scenes.workspace import propose
+        probability, transform, timings = self.probability(rgb)
+        scene = new_scene(rgb)
+        propose(scene, probability, self.release.threshold, self.release.cache_namespace,
+                minimum_pixels=minimum_pixels)
+        scene.record["proposal"].update(transform=transform, timings_ms=timings)
+        return scene

@@ -21,7 +21,7 @@ def main():
               for p in (root/folder).rglob('*') if p.is_file()
               and '__pycache__' not in p.parts and p.suffix in ('.py', '.json', '.onnx')
               and p.name != 'compatibility.json'}
-    actual.update({p: sha(root/p) for p in ('pyproject.toml', 'constraints.txt')})
+    actual.update({p: sha(root/p) for p in ('pyproject.toml', 'constraints.txt', 'MANIFEST.in')})
     if actual != expected:
         changed = sorted(p for p in actual.keys() | expected.keys() if actual.get(p) != expected.get(p))
         raise ValueError('Runtime inventory differs: '+', '.join(changed))

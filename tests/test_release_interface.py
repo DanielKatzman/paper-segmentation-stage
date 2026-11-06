@@ -46,7 +46,7 @@ def test_v2_resume_rejects_tampering_and_changed_request(monkeypatch, tmp_path):
     captures = tmp_path/'captures'; captures.mkdir()
     Image.new('RGB', (40, 32), 'gray').save(captures/'p.png')
     output = tmp_path/'output'
-    args = ['run', '--input', str(captures), '--output', str(output), '--models', str(models), '--review', 'none']
+    args = ['run', '--input', str(captures), '--output', str(output), '--models', str(models), '--review', 'none', '--piece-mode', 'single']
     assert release_cli.main(args) == 0
     assert release_cli.main(args+['--resume']) == 0
     assert release_cli.main(args+['--resume', '--pdf-dpi', '200']) == 2

@@ -1,0 +1,18 @@
+{
+  "scene_count": 100,
+  "master_size": 1536,
+  "training_size": 768,
+  "seed": 73191,
+  "count_bins": [[0, 0, 0.1], [1, 1, 0.15], [2, 4, 0.3], [5, 8, 0.25], [9, 16, 0.15], [17, 32, 0.05]],
+  "source_weights": {"procedural": 0.45, "real": 0.3, "retextured": 0.15, "mixed": 0.1},
+  "profile_weights": {"phone": 0.5, "scanner": 0.5},
+  "minimum_gap_px": 8,
+  "minimum_piece_pixels": 40,
+  "placement_attempts": 100,
+  "scene_attempts": 12,
+  "pdf_dpi": 160,
+  "effects": true,
+  "global_perspective": 0.0,
+  "radial_distortion": 0.0,
+  "layout": "mixed"
+}

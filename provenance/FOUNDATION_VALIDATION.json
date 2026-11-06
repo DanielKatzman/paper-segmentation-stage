@@ -1,0 +1,115 @@
+{
+  "base_commit": "a0e0fae627f16910065471cf1e829bcb1e2a9685",
+  "boundary_adapter": {
+    "piece_count": 30,
+    "removed_pixels": 0
+  },
+  "branch": "codex/multi-piece-foundation",
+  "extracted_windows_runtime": {
+    "approved_publication": true,
+    "arbitrary_fragments_without_page_ids": true,
+    "collection_round_trip": true,
+    "core_software_version": "1.1.0.dev0",
+    "dataset_freeze": true,
+    "duplicate_import": true,
+    "fixture_pieces": 4,
+    "fixture_scenes": 2,
+    "model_proposals": 4,
+    "model_sha256": "cbd43f3f305d44c811d70f1ab604c7dbef9d5ddb2eecd9fd0dbe3f52e3345417",
+    "native_outline_export": true,
+    "scope": "CPU inference and data workflow; no model accuracy claim",
+    "status": "passed"
+  },
+  "legacy_dataset": {
+    "fingerprint": "225061bdeab36f7a10d5b9080c01ad013db0cb3b798d53e6ddfddcd86834ffaf",
+    "samples": 3879,
+    "verified_unchanged": true
+  },
+  "limitations": [
+    "Desktop screenshot inspection unavailable: app approval timed out, then FrameArrived timed out. Own Tk control and extracted GUI startup passed.",
+    "macOS source build kit only; native Mac qualification pending.",
+    "No new model training or production orchestrator deployment."
+  ],
+  "own_tk_widget_control": {
+    "automatic_prediction": true,
+    "independent_review": true,
+    "metadata_only_refresh": true,
+    "modal_native_editor": true,
+    "native_photo": {
+      "load_predict_save_preview_seconds": 4.108999999938533,
+      "pieces_proposed": 2,
+      "proposal_saved": true,
+      "shape": [
+        4000,
+        3000,
+        3
+      ],
+      "ten_cached_refresh_and_draw_seconds": 0.2190000000409782
+    },
+    "overview_render": true,
+    "safe_prediction_cancel": true,
+    "saved_prediction_reuse": true,
+    "scene_load": true,
+    "scope": "Tk widget construction and own-app callbacks; not a desktop screenshot audit",
+    "status": "passed",
+    "undo_redo": true
+  },
+  "packages": {
+    "PaperSegmentationAnnotator-Windows-x86_64.zip": {
+      "bytes": 148021496,
+      "sha256": "b7b9cebee7aaf720347c6c3a2d8ee26f13a22e3da65f104cbfbba3ee1947fe5f"
+    },
+    "PaperSegmentationAnnotator-macOS-arm64-build-kit.zip": {
+      "bytes": 52757194,
+      "sha256": "e1f5ec4a2b98d73ccf86c60ffc343bdea76271303179daa2ddee81bcbe4f9731"
+    }
+  },
+  "pytest": {
+    "failed": 0,
+    "passed": 43
+  },
+  "real_phone_photo_profile": {
+    "cpu_threads": 4,
+    "first_import_seconds_max": 1.0662650000303984,
+    "first_import_seconds_min": 1.0155609000939876,
+    "native_hw": [
+      4000,
+      3000
+    ],
+    "photo_count": 7,
+    "proposal_counts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "saved_proposal_seconds_max": 2.788945800042711,
+    "saved_proposal_seconds_min": 2.6081840000115335,
+    "scope": "Local CPU latency and proposal-count check; not an edge-accuracy benchmark"
+  },
+  "schema_version": "paper-foundation-validation-1.0",
+  "source_inventory_verified": true,
+  "synthetic_example": {
+    "complete": 7,
+    "counts": {
+      "0": 1,
+      "1": 2,
+      "4": 3,
+      "8": 2
+    },
+    "derived_warning_count": 0,
+    "empty": 1,
+    "excluded": 0,
+    "instances": 30,
+    "profiles": {
+      "phone": 2,
+      "scanner": 6
+    },
+    "request_sha256": "61c27d3bd56c337f1d41937471ff5241f39674bb6bab461e69c5ea13a41a588b",
+    "scenes": 8,
+    "unfinished": 0
+  }
+}

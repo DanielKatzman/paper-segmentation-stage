@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native paper scene annotation",
+  "type": "object",
+  "required": ["schema_version", "capture_id", "pixel_sha256", "original_size_hw", "state", "metadata", "instances"],
+  "properties": {
+    "schema_version": {"const": "paper-scene-1.0"},
+    "capture_id": {"type": "string", "pattern": "^source_[a-f0-9]{64}$"},
+    "pixel_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "original_size_hw": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 2}},
+    "state": {"enum": ["in_progress", "complete", "confirmed_empty", "excluded"]},
+    "metadata": {"type": "object"},
+    "instances": {"type": "array", "items": {
+      "type": "object", "required": ["instance_id", "label", "state", "bbox_xywh", "origin", "parents"],
+      "properties": {
+        "instance_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
+        "label": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "state": {"enum": ["proposed", "accepted", "rejected"]},
+        "bbox_xywh": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "integer", "minimum": 0}},
+        "parents": {"type": "array", "items": {"type": "string"}}
+      }
+    }}
+  }
+}

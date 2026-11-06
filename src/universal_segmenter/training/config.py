@@ -36,6 +36,7 @@ class TrainingConfig:
     checkpoint_every_optimizer_steps: int = 100
     progress_every_batches: int = 20
     resume: bool = True
+    scene_count_weights: dict[str, float] = field(default_factory=dict)
     device: str = "cuda"
     category_weights: dict[str, float] = field(default_factory=lambda: {
         "real_capture": 0.25,
@@ -49,6 +50,10 @@ class TrainingConfig:
         return self.physical_batch_size * self.gradient_accumulation_steps
 
     def validate(self) -> None:
+        if (set(self.scene_count_weights)-{"0","1","2-4","5-8","9-16","17+"}
+                or any(w<0 for w in self.scene_count_weights.values())
+                or (self.scene_count_weights and sum(self.scene_count_weights.values())<=0)):
+            raise ValueError("Invalid scene-count sampling weights")
         if self.model_type != "segformer_b1_detail":
             raise ValueError(f"unsupported model_type: {self.model_type}")
         if self.resolution < 128 or self.resolution % 32:
@@ -111,5 +116,7 @@ class TrainingConfig:
         # field mean the same thing and must produce the same resume hash.
         if value.get("initial_checkpoint") is None:
             value.pop("initial_checkpoint", None)
+        if not value.get("scene_count_weights"):
+            value.pop("scene_count_weights", None)
         payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()

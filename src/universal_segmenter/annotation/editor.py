@@ -81,10 +81,13 @@ class MaskEditor:
                  background_status: Callable[[], str] | None = None,
                  dataset_split: str = "train",
                  dataset_split_choices: Sequence[tuple[str, str]] | None = None,
+                 parent=None, keep_largest_on_save: bool = True,
                  ) -> None:
         if rgb.shape[:2] != mask.shape or mask.shape != proposal.shape:
             raise ValueError("RGB, current mask, and proposal dimensions must match")
         self.rgb = rgb
+        self.parent = parent
+        self.keep_largest_on_save = keep_largest_on_save
         self.mask = mask.copy()
         self.proposal = proposal.copy()
         self.selected_proposal_key = proposal_key
@@ -111,6 +114,7 @@ class MaskEditor:
         self.show_proposal = True
         self.show_fill = True
         self.undo: list[np.ndarray] = []
+        self.redo: list[np.ndarray] = []
         self.paint_value = True
         self.base_scale = self.zoom = self.scale = 1.0
         self.view_width = rgb.shape[1]
@@ -121,6 +125,7 @@ class MaskEditor:
         self.action = "quit"
         self.root = self.canvas = self.canvas_image = None
         self.brush_outline = self.photo = self.status = self.redraw_job = None
+        self.status_job = None
         self.proposal_boundary = ndimage.binary_dilation(boundary(self.proposal), iterations=1)
         self.mask_fraction = float(self.mask.mean())
         self.mask_fraction_dirty = False
@@ -159,7 +164,15 @@ class MaskEditor:
         if self.root is None:
             return
         self.status.configure(text=self._status_text())
-        self.root.after(750, self._refresh_status)
+        self.status_job = self.root.after(750, self._refresh_status)
+
+    def _cancel_jobs(self) -> None:
+        if self.root is not None:
+            for name in ("redraw_job", "status_job"):
+                job = getattr(self, name, None)
+                if job is not None:
+                    self.root.after_cancel(job)
+                    setattr(self, name, None)
 
     def _replace_with_proposal(self, key: str) -> None:
         labels = dict(self.proposal_choices)
@@ -209,6 +222,7 @@ class MaskEditor:
             self.mask_fraction_dirty = False
 
     def _push_undo(self) -> None:
+        self.redo.clear()
         self.undo.append(self.mask.copy())
         if len(self.undo) > 30:
             self.undo.pop(0)
@@ -386,13 +400,17 @@ class MaskEditor:
             self.mask = regularize_paper_mask(
                 self.mask,
                 closing_iterations=self.regularize_closing_iterations,
-                keep_largest=True,
+                keep_largest=self.keep_largest_on_save,
             )
             self._mask_changed()
             self._finish_mask_change()
         self.action = action
         if self.root is not None:
-            self.root.quit()
+            self._cancel_jobs()
+            if self.parent is not None:
+                self.root.destroy()
+            else:
+                self.root.quit()
 
     def _key(self, event) -> str:
         key = event.keysym.lower()
@@ -401,7 +419,13 @@ class MaskEditor:
         elif key in ("q", "escape"):
             self._finish("quit")
         elif key in ("u", "z") and self.undo:
+            self.redo.append(self.mask.copy())
             self.mask = self.undo.pop()
+            self._mask_changed(); self._finish_mask_change()
+            self._schedule_redraw()
+        elif key == "y" and self.redo:
+            self.undo.append(self.mask.copy())
+            self.mask = self.redo.pop()
             self._mask_changed(); self._finish_mask_change()
             self._schedule_redraw()
         elif key == "r":
@@ -452,7 +476,7 @@ class MaskEditor:
                 "The annotation editor needs Tkinter and Pillow ImageTk. "
                 "On Windows, run `python -m tkinter` to verify the installation.") from error
 
-        self.root = tk.Tk()
+        self.root = tk.Toplevel(self.parent) if self.parent is not None else tk.Tk()
         self.root.title(self.title)
         self.root.protocol("WM_DELETE_WINDOW", lambda: self._finish("quit"))
         height, width = self.rgb.shape[:2]
@@ -470,7 +494,7 @@ class MaskEditor:
             text=("LEFT drag: add paper     RIGHT drag: erase background     "
                   "S/Enter: save and next     Q/Esc: quit safely\n"
                   "WHEEL: zoom at cursor     MIDDLE drag: pan     0: fit view     "
-                  "U/Z: undo     R: reset to selected guess     "
+                  "U/Z: undo     Y: redo     R: reset to selected guess     "
                   "R: reset to the SegFormer guess\n"
                   "K: keep largest     F: fill holes     [ ]: brush size     "
                   "A: auto-close on/off     M: proposal edge     O: fill\n"
@@ -521,12 +545,19 @@ class MaskEditor:
         self.canvas.bind("<Button-5>", lambda event: self._zoom_at(event.x, event.y, -1))
         self.root.bind("<KeyPress>", self._key)
         self._redraw()
-        self.root.after(750, self._refresh_status)
+        self.status_job = self.root.after(750, self._refresh_status)
         self.root.update_idletasks()
         self.root.focus_force()
         try:
-            self.root.mainloop()
+            if self.parent is not None:
+                self.root.transient(self.parent)
+                self.root.grab_set()
+                self.parent.wait_window(self.root)
+            else:
+                self.root.mainloop()
         finally:
-            self.root.destroy()
+            if self.root.winfo_exists():
+                self._cancel_jobs()
+                self.root.destroy()
             self.root = None
         return self.action, self.mask
